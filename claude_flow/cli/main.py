@@ -13,6 +13,10 @@ from rich.panel import Panel
 from claude_flow.observer.parser import UsageParser
 from claude_flow.observer.report import UsageReport
 from claude_flow.observer.store import UsageStore
+from claude_flow.graph.engine import DAGEngine
+from claude_flow.graph.models import ProjectDAG
+from claude_flow.graph.render import DAGRenderer
+from claude_flow.graph.sample import build_sample_dag
 
 app = typer.Typer(
     name="claudeflow",
@@ -96,6 +100,34 @@ def status(
         console.print("\n[dim]Stopped.[/dim]")
     finally:
         store.close()
+
+
+@app.command()
+def graph(
+    file: str = typer.Option(
+        None,
+        "--file",
+        "-f",
+        help="Path to a tasks.json file defining the DAG",
+    ),
+) -> None:
+    """Visualize a project task dependency graph."""
+    import json
+
+    if file:
+        with open(file) as fh:
+            data = json.load(fh)
+        dag = ProjectDAG.from_dict(data)
+    else:
+        dag = build_sample_dag()
+        console.print("[dim]Showing sample project DAG (use --file to load your own)[/dim]")
+
+    try:
+        engine = DAGEngine.from_project_dag(dag)
+        renderer = DAGRenderer(engine, console)
+        renderer.render()
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
 
 
 if __name__ == "__main__":
