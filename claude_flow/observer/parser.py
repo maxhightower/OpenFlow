@@ -104,12 +104,34 @@ class UsageParser:
             if ts:
                 timestamps.append(ts)
 
-            ev_model = ev.get("model") or ev.get("modelId")
+            # Model can be at top level or nested in message
+            msg = ev.get("message") or {}
+            ev_model = (
+                ev.get("model")
+                or ev.get("modelId")
+                or msg.get("model")
+                or msg.get("modelId")
+            )
             if ev_model:
                 model = ev_model
 
-            input_tok = ev.get("input_tokens") or ev.get("inputTokens", 0)
-            output_tok = ev.get("output_tokens") or ev.get("outputTokens", 0)
+            # Token usage can be at top level or nested in message.usage
+            usage = msg.get("usage") or {}
+            input_tok = (
+                ev.get("input_tokens")
+                or ev.get("inputTokens")
+                or usage.get("input_tokens", 0)
+            )
+            output_tok = (
+                ev.get("output_tokens")
+                or ev.get("outputTokens")
+                or usage.get("output_tokens", 0)
+            )
+            # Include cached tokens in the total input count
+            cache_creation = usage.get("cache_creation_input_tokens", 0)
+            cache_read = usage.get("cache_read_input_tokens", 0)
+            input_tok += cache_creation + cache_read
+
             if input_tok or output_tok:
                 cost = estimate_cost(model, input_tok, output_tok)
                 token_events.append(

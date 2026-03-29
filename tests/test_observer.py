@@ -58,6 +58,46 @@ SAMPLE_EVENTS_CAMEL = [
     },
 ]
 
+# Real Claude Code log format: tokens nested under message.usage
+SAMPLE_EVENTS_REAL_FORMAT = [
+    {
+        "type": "assistant",
+        "sessionId": "sess-004",
+        "timestamp": "2026-03-15T10:00:00.000Z",
+        "message": {
+            "model": "claude-opus-4-6",
+            "role": "assistant",
+            "usage": {
+                "input_tokens": 3,
+                "cache_creation_input_tokens": 14678,
+                "cache_read_input_tokens": 0,
+                "output_tokens": 20,
+            },
+        },
+    },
+    {
+        "type": "assistant",
+        "sessionId": "sess-004",
+        "timestamp": "2026-03-15T10:01:00.000Z",
+        "message": {
+            "model": "claude-opus-4-6",
+            "role": "assistant",
+            "usage": {
+                "input_tokens": 500,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 10000,
+                "output_tokens": 2500,
+            },
+        },
+    },
+    {
+        "type": "user",
+        "sessionId": "sess-004",
+        "timestamp": "2026-03-15T10:00:30.000Z",
+        "message": {"role": "user", "content": "hello"},
+    },
+]
+
 
 @pytest.fixture
 def jsonl_dir(tmp_path: Path) -> Path:
@@ -74,6 +114,12 @@ def jsonl_dir(tmp_path: Path) -> Path:
     log2 = project2_dir / "events.jsonl"
     lines2 = [json.dumps(ev) for ev in SAMPLE_EVENTS_CAMEL]
     log2.write_text("\n".join(lines2) + "\n")
+
+    project3_dir = tmp_path / ".claude" / "projects" / "real-project"
+    project3_dir.mkdir(parents=True)
+    log3 = project3_dir / "session.jsonl"
+    lines3 = [json.dumps(ev) for ev in SAMPLE_EVENTS_REAL_FORMAT]
+    log3.write_text("\n".join(lines3) + "\n")
 
     return tmp_path / ".claude"
 
@@ -130,12 +176,12 @@ class TestUsageParser:
     def test_find_jsonl_files(self, jsonl_dir: Path):
         parser = UsageParser(claude_dir=jsonl_dir)
         files = parser.find_jsonl_files()
-        assert len(files) == 2
+        assert len(files) == 3
 
     def test_parse_all(self, jsonl_dir: Path):
         parser = UsageParser(claude_dir=jsonl_dir)
         records = parser.parse_all()
-        assert len(records) == 3  # sess-001, sess-002, sess-003
+        assert len(records) == 4  # sess-001, sess-002, sess-003, sess-004
 
     def test_session_fields(self, jsonl_dir: Path):
         parser = UsageParser(claude_dir=jsonl_dir)
@@ -157,6 +203,29 @@ class TestUsageParser:
         assert sess3.model == "claude-haiku-4-5-20251001"
         assert len(sess3.token_events) == 1
         assert sess3.token_events[0].input_tokens == 800
+
+    def test_real_log_format_nested_usage(self, jsonl_dir: Path):
+        """Test parsing real Claude Code format with message.usage nesting."""
+        parser = UsageParser(claude_dir=jsonl_dir)
+        records = parser.parse_all()
+        by_id = {r.session_id: r for r in records}
+
+        sess4 = by_id["sess-004"]
+        assert sess4.model == "claude-opus-4-6"
+        assert sess4.project == "real-project"
+        # Should have 2 token events (the user message has no usage)
+        assert len(sess4.token_events) == 2
+
+        # First event: 3 input + 14678 cache_creation + 0 cache_read = 14681
+        ev0 = sess4.token_events[0]
+        assert ev0.input_tokens == 14681
+        assert ev0.output_tokens == 20
+
+        # Second event: 500 input + 0 cache_creation + 10000 cache_read = 10500
+        ev1 = sess4.token_events[1]
+        assert ev1.input_tokens == 10500
+        assert ev1.output_tokens == 2500
+        assert ev1.cost_usd > 0
 
     def test_empty_dir(self, tmp_path: Path):
         parser = UsageParser(claude_dir=tmp_path / "nonexistent")
@@ -186,9 +255,9 @@ class TestUsageStore:
 
         store = UsageStore(db_path=db_path)
         count = store.ingest(records)
-        assert count == 3
+        assert count == 4
 
-        assert store.session_count() == 3
+        assert store.session_count() == 4
 
         input_tok, output_tok = store.total_tokens()
         assert input_tok > 0
