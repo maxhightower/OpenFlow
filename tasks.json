@@ -1,0 +1,136 @@
+{
+  "name": "OpenFlow — ClaudeFlow v0.1 Completion",
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Write scheduler module tests",
+      "task_type": "test",
+      "estimated_hours": 2.0,
+      "status": "pending",
+      "priority": 1,
+      "estimated_tokens": 18000,
+      "token_budget": 10000,
+      "agent_config_id": "write-tests"
+    },
+    {
+      "id": "T2",
+      "name": "Write dispatcher module tests",
+      "task_type": "test",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "priority": 2,
+      "estimated_tokens": 14000,
+      "token_budget": 8000,
+      "agent_config_id": "write-tests"
+    },
+    {
+      "id": "T3",
+      "name": "Write MCP server tests",
+      "task_type": "test",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "priority": 3,
+      "estimated_tokens": 10000,
+      "token_budget": 6000,
+      "agent_config_id": "write-tests"
+    },
+    {
+      "id": "T4",
+      "name": "Add per-project cost breakdown to observe report",
+      "task_type": "feature",
+      "estimated_hours": 1.0,
+      "status": "pending",
+      "priority": 2,
+      "estimated_tokens": 12000,
+      "token_budget": 6000,
+      "agent_config_id": "add-feature"
+    },
+    {
+      "id": "T5",
+      "name": "Build FastAPI serve command for web dashboard",
+      "task_type": "feature",
+      "estimated_hours": 3.0,
+      "status": "pending",
+      "priority": 4,
+      "estimated_tokens": 30000,
+      "token_budget": 15000,
+      "agent_config_id": "add-feature"
+    },
+    {
+      "id": "T6",
+      "name": "Run full test suite and fix any failures",
+      "task_type": "test",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "priority": 1,
+      "estimated_tokens": 8000,
+      "token_budget": 4000,
+      "agent_config_id": "run-and-fix"
+    },
+    {
+      "id": "T7",
+      "name": "Write CLAUDE.md project guide",
+      "task_type": "docs",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "priority": 5,
+      "estimated_tokens": 6000,
+      "token_budget": 3000,
+      "agent_config_id": "write-docs"
+    },
+    {
+      "id": "T8",
+      "name": "v0.1.0 release prep — bump version, update README",
+      "task_type": "release",
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "priority": 6,
+      "estimated_tokens": 5000,
+      "token_budget": 3000,
+      "agent_config_id": "write-docs"
+    }
+  ],
+  "dependencies": [
+    ["T1", "T6"],
+    ["T2", "T6"],
+    ["T3", "T6"],
+    ["T4", "T5"],
+    ["T6", "T7"],
+    ["T6", "T8"],
+    ["T7", "T8"]
+  ],
+  "agent_configs": [
+    {
+      "config_id": "write-tests",
+      "model": "claude-sonnet-4-6",
+      "working_directory": "C:/Users/maxhi/OneDrive/Documents/GitHub/OpenFlow",
+      "max_turns": 20,
+      "allowed_tools": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "prompt_template": "You are working in the OpenFlow/ClaudeFlow project at C:/Users/maxhi/OneDrive/Documents/GitHub/OpenFlow.\n\nTask: {{ task.name }}\n\nContext:\n- This is a Python project (pyproject.toml, src in claude_flow/)\n- Existing tests are in tests/test_graph.py and tests/test_observer.py\n- Use pytest, fixtures, and the same style as existing tests\n- Do NOT use mocks unless absolutely necessary — prefer real objects with tmp_path\n\nInstructions:\n1. Read the relevant source files to understand what needs testing\n2. Write the test file (e.g. tests/test_scheduler.py) covering the key classes and edge cases\n3. Run `pytest tests/ -x -q` to verify all tests pass\n4. Fix any failures before finishing\n\nDo not modify source files unless you find a genuine bug that must be fixed to make tests pass."
+    },
+    {
+      "config_id": "add-feature",
+      "model": "claude-sonnet-4-6",
+      "working_directory": "C:/Users/maxhi/OneDrive/Documents/GitHub/OpenFlow",
+      "max_turns": 25,
+      "allowed_tools": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "prompt_template": "You are working in the OpenFlow/ClaudeFlow project at C:/Users/maxhi/OneDrive/Documents/GitHub/OpenFlow.\n\nTask: {{ task.name }}\nType: {{ task.task_type.value }}\nEstimated effort: {{ task.estimated_hours }}h\n\nContext:\n- Python project using typer (CLI), rich (terminal UI), sqlite3, networkx, ortools\n- Follow existing code style — dataclasses, type hints, no unnecessary abstractions\n- The CLI entry point is claude_flow/cli/main.py\n- The observer module reads ~/.claude/projects/**/*.jsonl\n\nInstructions:\n1. Read relevant existing files before writing anything\n2. Implement the feature with minimal scope — no speculative additions\n3. Add the feature to the CLI if applicable\n4. Run `claudeflow --help` to verify it appears\n5. Do a quick smoke test of the new functionality\n\nKeep changes focused. Do not refactor unrelated code."
+    },
+    {
+      "config_id": "run-and-fix",
+      "model": "claude-sonnet-4-6",
+      "working_directory": "C:/Users/maxhi/OneDrive/Documents/GitHub/OpenFlow",
+      "max_turns": 15,
+      "allowed_tools": ["Read", "Edit", "Bash", "Glob", "Grep"],
+      "prompt_template": "You are working in the OpenFlow/ClaudeFlow project at C:/Users/maxhi/OneDrive/Documents/GitHub/OpenFlow.\n\nTask: {{ task.name }}\n\nInstructions:\n1. Run `pytest tests/ -v` and capture the full output\n2. For each failure: read the relevant source + test file, diagnose the root cause, fix it\n3. Re-run after each fix to confirm it passes\n4. Only stop when `pytest tests/ -q` exits with code 0\n\nDo not delete tests or weaken assertions to make things pass — fix the underlying code."
+    },
+    {
+      "config_id": "write-docs",
+      "model": "claude-sonnet-4-6",
+      "working_directory": "C:/Users/maxhi/OneDrive/Documents/GitHub/OpenFlow",
+      "max_turns": 10,
+      "allowed_tools": ["Read", "Write", "Edit", "Bash", "Glob"],
+      "prompt_template": "You are working in the OpenFlow/ClaudeFlow project at C:/Users/maxhi/OneDrive/Documents/GitHub/OpenFlow.\n\nTask: {{ task.name }}\nType: {{ task.task_type.value }}\n\nInstructions:\n1. Read the existing README.md and any relevant source files\n2. Complete the task with accurate, concise documentation\n3. For CLAUDE.md: cover project structure, how to run tests, key design decisions, and common commands\n4. For release prep: bump version in pyproject.toml, ensure README reflects current commands\n\nKeep docs accurate to what actually exists — do not document planned features as if they are built."
+    }
+  ]
+}

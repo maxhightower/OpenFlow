@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 
 
@@ -48,6 +49,19 @@ class Task:
     estimated_hours: float = 1.0
     status: TaskStatus = TaskStatus.PENDING
 
+    # Token budget fields
+    estimated_tokens: int = 0
+    actual_tokens: int = 0
+    token_budget: int = 0          # Hard cap: skip if window has less than this
+
+    # Scheduling metadata
+    priority: int = 5              # 1 (highest) to 10 (lowest)
+    agent_config_id: str | None = None
+    scheduled_at: datetime | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    run_id: str | None = None
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -55,6 +69,11 @@ class Task:
             "task_type": self.task_type.value,
             "estimated_hours": self.estimated_hours,
             "status": self.status.value,
+            "estimated_tokens": self.estimated_tokens,
+            "actual_tokens": self.actual_tokens,
+            "token_budget": self.token_budget,
+            "priority": self.priority,
+            "agent_config_id": self.agent_config_id,
         }
 
     @classmethod
@@ -65,6 +84,11 @@ class Task:
             task_type=TaskType(data.get("task_type", "feature")),
             estimated_hours=data.get("estimated_hours", 1.0),
             status=TaskStatus(data.get("status", "pending")),
+            estimated_tokens=data.get("estimated_tokens", 0),
+            actual_tokens=data.get("actual_tokens", 0),
+            token_budget=data.get("token_budget", 0),
+            priority=data.get("priority", 5),
+            agent_config_id=data.get("agent_config_id"),
         )
 
 

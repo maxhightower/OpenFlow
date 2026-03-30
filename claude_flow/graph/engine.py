@@ -13,6 +13,7 @@ class DAGEngine:
     def __init__(self) -> None:
         self.graph: nx.DiGraph = nx.DiGraph()
         self._tasks: dict[str, Task] = {}
+        self.dag: ProjectDAG | None = None
 
     # -- Construction --------------------------------------------------------
 
@@ -89,6 +90,7 @@ class DAGEngine:
     @classmethod
     def from_project_dag(cls, dag: ProjectDAG) -> DAGEngine:
         engine = cls()
+        engine.dag = dag
         for task in dag.tasks:
             engine.add_task(task)
         for from_id, to_id in dag.dependencies:

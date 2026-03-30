@@ -10,10 +10,10 @@ def build_sample_dag() -> ProjectDAG:
         Task("T1", "Fix auth token refresh", TaskType.BUG_FIX, 2.0, TaskStatus.DONE),
         Task("T2", "Refactor DB pool", TaskType.REFACTOR, 4.0, TaskStatus.DONE),
         # Level 1
-        Task("T3", "Rate limiting middleware", TaskType.FEATURE, 3.0, TaskStatus.IN_PROGRESS),
+        Task("T3", "Rate limiting middleware", TaskType.FEATURE, 3.0, TaskStatus.DONE),
         Task("T4", "Write migration scripts", TaskType.DOCS, 2.0, TaskStatus.DONE),
         # Level 2
-        Task("T5", "User dashboard API", TaskType.FEATURE, 6.0, TaskStatus.IN_PROGRESS),
+        Task("T5", "User dashboard API", TaskType.FEATURE, 6.0, TaskStatus.PENDING),
         Task("T6", "Add integration tests", TaskType.TEST, 3.0, TaskStatus.PENDING),
         # Level 3
         Task("T7", "Dashboard UI components", TaskType.FEATURE, 8.0, TaskStatus.PENDING),

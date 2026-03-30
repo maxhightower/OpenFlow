@@ -87,10 +87,29 @@ class UsageParser:
         ]
 
     def parse_all(self) -> list[SessionRecord]:
-        records: list[SessionRecord] = []
+        """Aggregate events across all files, merging by session_id so each session produces one record."""
+        events_by_session: dict[str, list[dict]] = {}
+        project_by_session: dict[str, str] = {}
+
         for path in self.find_jsonl_files():
-            records.extend(self.parse_file(path))
-        return records
+            project = _extract_project(path, self.claude_dir)
+            with open(path, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    sid = entry.get("session_id") or entry.get("sessionId", "unknown")
+                    events_by_session.setdefault(sid, []).append(entry)
+                    project_by_session.setdefault(sid, project)
+
+        return [
+            self._build_session(sid, events, project_by_session[sid])
+            for sid, events in events_by_session.items()
+        ]
 
     def _build_session(
         self, session_id: str, events: list[dict], project: str
@@ -164,12 +183,42 @@ class UsageParser:
 
 
 def _extract_project(path: Path, claude_dir: Path) -> str:
+    """
+    Extract a human-readable project name from a Claude Code log path.
+
+    Claude Code stores logs at:
+      ~/.claude/projects/<encoded-path>/<session-uuid>/[subagents/]*.jsonl
+
+    The encoded path encodes Windows/Unix paths as:
+      C:\\Users\\foo\\GitHub\\MyRepo  →  c--Users-foo-GitHub-MyRepo
+      /Users/foo/GitHub/MyRepo        →  -Users-foo-GitHub-MyRepo
+
+    We decode by stripping the drive prefix and splitting on `-` to reconstruct
+    the path, then return the last 1-2 meaningful segments.
+    """
     try:
         rel = path.relative_to(claude_dir / "projects")
-        # Project is everything except the filename
-        return str(rel.parent) if rel.parent != Path(".") else str(rel.stem)
+        # First component is the encoded project path; ignore session UUID and deeper dirs
+        encoded = rel.parts[0] if rel.parts else str(rel.stem)
+        return _decode_project_name(encoded)
     except ValueError:
         return "unknown"
+
+
+def _decode_project_name(encoded: str) -> str:
+    """Convert an encoded Claude Code project directory name to a readable label."""
+    import re
+
+    # Strip Windows drive prefix: e.g. "c--" or "C--"
+    s = re.sub(r"^[A-Za-z]--", "", encoded)
+    # Replace remaining `-` with `/` to rebuild the path
+    decoded = s.replace("-", "/")
+    # Split into parts and drop empty segments
+    parts = [p for p in decoded.split("/") if p]
+    if not parts:
+        return encoded
+    # Return last 2 meaningful segments (e.g. "GitHub/MyRepo" or just "MyRepo")
+    return "/".join(parts[-2:]) if len(parts) >= 2 else parts[-1]
 
 
 def _parse_timestamp(value: str | int | float | None) -> datetime | None:
