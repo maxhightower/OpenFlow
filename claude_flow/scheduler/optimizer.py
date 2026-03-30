@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
 
-from ortools.sat.python import cp_model
+try:
+    from ortools.sat.python import cp_model
+except ImportError:
+    cp_model = None  # type: ignore[assignment]
 
 from claude_flow.graph.models import Task
 from claude_flow.scheduler.models import BudgetWindow, ScheduledTask
@@ -75,6 +78,8 @@ class BudgetOptimizer:
         remaining_seconds: int,
         window: BudgetWindow,
     ) -> list[ScheduledTask] | None:
+        if cp_model is None:
+            return None  # Fall back to greedy
         model = cp_model.CpModel()
         task_ids = [t.id for t in tasks]
         task_map = {t.id: t for t in tasks}

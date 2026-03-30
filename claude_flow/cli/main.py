@@ -145,13 +145,20 @@ def graph(
 
 @app.command()
 def budget(
+    file: str = typer.Option(None, "--file", "-f", help="Path to tasks.json"),
     db_path: str = typer.Option(None, "--db", help="Path to scheduler SQLite database"),
     token_budget: int = typer.Option(500_000, "--budget", "-b", help="Token budget per 5-hour window"),
 ) -> None:
     """Show current token budget window status."""
-    from claude_flow.graph.sample import build_sample_dag
+    import json as _json
 
-    dag = build_sample_dag()
+    if file:
+        with open(file) as fh:
+            data = _json.load(fh)
+        dag = ProjectDAG.from_dict(data)
+    else:
+        dag = build_sample_dag()
+
     engine_dag = DAGEngine.from_project_dag(dag)
     scheduler = SchedulerEngine.from_dag_engine(
         engine_dag,

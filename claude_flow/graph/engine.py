@@ -85,6 +85,15 @@ class DAGEngine:
             if preds and any(self._tasks[p].status != TaskStatus.DONE for p in preds):
                 task.status = TaskStatus.BLOCKED
 
+    # -- Export ---------------------------------------------------------------
+
+    def to_project_dag(self) -> ProjectDAG:
+        """Export the current engine state back to a ProjectDAG."""
+        tasks = list(self._tasks.values())
+        dependencies = list(self.graph.edges())
+        name = self.dag.name if self.dag else "Untitled"
+        return ProjectDAG(name=name, tasks=tasks, dependencies=dependencies)
+
     # -- Factory -------------------------------------------------------------
 
     @classmethod

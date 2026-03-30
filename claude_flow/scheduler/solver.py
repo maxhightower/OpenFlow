@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ortools.sat.python import cp_model
+try:
+    from ortools.sat.python import cp_model
+except ImportError:
+    cp_model = None  # type: ignore[assignment]
 
 from claude_flow.graph.engine import DAGEngine
 from claude_flow.graph.models import ProjectDAG, Task, TaskStatus
@@ -107,6 +110,12 @@ def solve(
     Raises:
         ValueError: If the DAG has cycles or the solver finds no solution.
     """
+    if cp_model is None:
+        raise ImportError(
+            "OR-Tools is required for schedule optimization. "
+            "Install it with: pip install claudeflow[solver]"
+        )
+
     engine = DAGEngine.from_project_dag(dag)
 
     # Filter tasks
