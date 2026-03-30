@@ -20,10 +20,13 @@ ClaudeFlow analyzes your Claude Code usage patterns and helps you optimize token
 ## Installation
 
 ```bash
-# Clone and install
+# Clone and install (core features)
 git clone https://github.com/maxhightower/OpenFlow.git
 cd OpenFlow
 uv sync
+
+# Include the OR-Tools constraint solver for optimal scheduling
+uv sync --extra solver
 ```
 
 ## Quick Start

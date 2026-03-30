@@ -3,9 +3,24 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from claude_flow.scheduler.engine import SchedulerEngine
+
+
+class DAGPersistence:
+    """Saves the current DAG state back to a JSON file after mutations."""
+
+    def __init__(self, file_path: Path | None) -> None:
+        self.file_path = file_path
+
+    def save(self, engine: SchedulerEngine) -> None:
+        if self.file_path is None:
+            return
+        dag = engine.dag_engine.to_project_dag()
+        with open(self.file_path, "w") as fh:
+            json.dump(dag.to_dict(), fh, indent=2)
 
 
 class ClaudeFlowTools:
@@ -14,8 +29,18 @@ class ClaudeFlowTools:
     Each method returns a plain dict that gets serialised to JSON text content.
     """
 
-    def __init__(self, engine: SchedulerEngine) -> None:
+    def __init__(
+        self,
+        engine: SchedulerEngine,
+        dag_persistence: DAGPersistence | None = None,
+    ) -> None:
         self.engine = engine
+        self._persistence = dag_persistence
+
+    def _auto_save(self) -> None:
+        """Persist the DAG to disk if a file path was provided."""
+        if self._persistence is not None:
+            self._persistence.save(self.engine)
 
     # ------------------------------------------------------------------
     # 1. get_budget_status
@@ -140,6 +165,8 @@ class ClaudeFlowTools:
             None,
         )
 
+        self._auto_save()
+
         return {
             "task_id": task_id,
             "name": task.name,
@@ -190,6 +217,7 @@ class ClaudeFlowTools:
         try:
             task_run = await runner.run(task, config, window.window_id, dry_run=False)
             self.engine.mark_completed(task.id, task_run)
+            self._auto_save()
             return {
                 "status": "completed",
                 "run_id": task_run.run_id,
@@ -239,6 +267,8 @@ class ClaudeFlowTools:
             status=RunStatus.COMPLETED,
         )
         self.engine.mark_completed(task_id, run)
+
+        self._auto_save()
 
         return {
             "ok": True,

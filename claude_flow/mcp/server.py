@@ -10,7 +10,7 @@ from mcp.server.stdio import stdio_server
 from mcp import types
 
 from claude_flow.scheduler.engine import SchedulerEngine
-from claude_flow.mcp.tools import ClaudeFlowTools
+from claude_flow.mcp.tools import ClaudeFlowTools, DAGPersistence
 
 # ---------------------------------------------------------------------------
 # Tool schema definitions
@@ -184,9 +184,9 @@ async def _handle_optimize_schedule(engine: SchedulerEngine, arguments: dict) ->
     return {"schedule": schedule.format()}
 
 
-def create_server(engine: SchedulerEngine) -> Server:
+def create_server(engine: SchedulerEngine, dag_persistence: DAGPersistence | None = None) -> Server:
     server = Server("claudeflow")
-    handler = ClaudeFlowTools(engine)
+    handler = ClaudeFlowTools(engine, dag_persistence=dag_persistence)
 
     TOOL_HANDLERS = {
         "get_budget_status": handler.get_budget_status,
@@ -247,7 +247,8 @@ async def run_server(
         model=model,
     )
 
-    server = create_server(scheduler)
+    persistence = DAGPersistence(dag_file) if dag_file else None
+    server = create_server(scheduler, dag_persistence=persistence)
 
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
