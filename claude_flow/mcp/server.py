@@ -137,12 +137,52 @@ TOOL_DEFINITIONS: list[types.Tool] = [
             "required": [],
         },
     ),
+    types.Tool(
+        name="optimize_schedule",
+        description=(
+            "Run the OR-Tools CP-SAT constraint solver to produce a makespan-optimal "
+            "schedule. Respects task dependencies, parallelizes across worker slots, "
+            "and skips completed tasks. Returns a timeline with worker lane assignments."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "num_workers": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Number of parallel worker slots (e.g. concurrent Claude sessions). Default 1.",
+                },
+                "hours_per_day": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Working hours per day, for calendar-day estimates. Optional.",
+                },
+            },
+            "required": [],
+        },
+    ),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Server factory
 # ---------------------------------------------------------------------------
+
+async def _handle_optimize_schedule(engine: SchedulerEngine, arguments: dict) -> dict:
+    """Run the CP-SAT solver on the engine's DAG."""
+    from claude_flow.scheduler.solver import solve
+
+    dag = engine.dag_engine.dag
+    num_workers = arguments.get("num_workers", 1)
+    hours_per_day = arguments.get("hours_per_day")
+
+    schedule = solve(
+        dag,
+        num_workers=num_workers,
+        hours_per_day=hours_per_day,
+    )
+    return {"schedule": schedule.format()}
+
 
 def create_server(engine: SchedulerEngine) -> Server:
     server = Server("claudeflow")
@@ -165,9 +205,12 @@ def create_server(engine: SchedulerEngine) -> Server:
 
     @server.call_tool()
     async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
-        if name not in TOOL_HANDLERS:
+        if name == "optimize_schedule":
+            result = await _handle_optimize_schedule(engine, arguments or {})
+        elif name in TOOL_HANDLERS:
+            result = await TOOL_HANDLERS[name](arguments or {})
+        else:
             raise ValueError(f"Unknown tool: {name}")
-        result = await TOOL_HANDLERS[name](arguments or {})
         return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
 
     return server

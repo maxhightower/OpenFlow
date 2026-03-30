@@ -13,6 +13,7 @@ from claude_flow.scheduler.models import (
 )
 from claude_flow.scheduler.optimizer import BudgetOptimizer
 from claude_flow.scheduler.store import SchedulerStore
+from claude_flow.scheduler.solver import solve as solve_optimal
 
 __all__ = [
     "AgentConfig",
@@ -26,4 +27,5 @@ __all__ = [
     "SchedulerEngine",
     "SchedulerStore",
     "TaskRun",
+    "solve_optimal",
 ]
