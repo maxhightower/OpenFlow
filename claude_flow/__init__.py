@@ -13,6 +13,9 @@ from claude_flow.graph.engine import DAGEngine
 from claude_flow.graph.render import DAGRenderer
 from claude_flow.graph.sample import build_sample_dag
 
+# Scheduler module — OR-Tools CP-SAT constraint optimizer
+from claude_flow.scheduler.solver import Schedule, ScheduledTask, solve
+
 __all__ = [
     # Observer
     "UsageParser",
@@ -29,4 +32,8 @@ __all__ = [
     "DAGEngine",
     "DAGRenderer",
     "build_sample_dag",
+    # Scheduler
+    "Schedule",
+    "ScheduledTask",
+    "solve",
 ]

@@ -12,6 +12,7 @@ from claude_flow.observer.store import UsageStore
 from claude_flow.graph.engine import DAGEngine
 from claude_flow.graph.models import ProjectDAG, TaskStatus
 from claude_flow.graph.sample import build_sample_dag
+from claude_flow.scheduler.solver import solve as solve_schedule
 
 mcp = FastMCP("claudeflow")
 
@@ -232,3 +233,29 @@ def critical_path(file: str | None = None) -> str:
         )
 
     return "\n".join(lines)
+
+
+@mcp.tool()
+def schedule(
+    file: str | None = None,
+    num_workers: int = 1,
+    hours_per_day: int | None = None,
+) -> str:
+    """Optimize a task schedule using constraint solving.
+
+    Takes a task DAG and produces an optimal schedule that minimizes
+    total wall-clock time, respecting dependencies and worker limits.
+    Tasks marked as DONE are skipped.
+
+    Args:
+        file: Path to a tasks.json file. If omitted, uses a sample DAG.
+        num_workers: Number of parallel workers (e.g. concurrent Claude sessions). Default 1.
+        hours_per_day: Hours of work per day, for calendar-day estimates. Optional.
+    """
+    _, dag = _load_dag(file)
+    result = solve_schedule(
+        dag,
+        num_workers=num_workers,
+        hours_per_day=hours_per_day,
+    )
+    return result.format()
