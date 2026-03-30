@@ -190,7 +190,7 @@ class TestUsageParser:
 
         sess1 = by_id["sess-001"]
         assert sess1.model == "claude-sonnet-4-6"
-        assert sess1.project == "my-project"
+        assert sess1.project == "my/project"
         assert sess1.duration_ms > 0
         assert len(sess1.token_events) == 2
 
@@ -212,7 +212,7 @@ class TestUsageParser:
 
         sess4 = by_id["sess-004"]
         assert sess4.model == "claude-opus-4-6"
-        assert sess4.project == "real-project"
+        assert sess4.project == "real/project"
         # Should have 2 token events (the user message has no usage)
         assert len(sess4.token_events) == 2
 
