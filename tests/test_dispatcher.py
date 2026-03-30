@@ -10,12 +10,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from claude_flow.dispatcher.watcher import OutputWatcher, TokenUsage, WatcherResult
-from claude_flow.dispatcher.runner import TaskRunner, TaskRunError, _check_claude_available
-from claude_flow.dispatcher.process import RunningProcess
-from claude_flow.graph.models import Task, TaskType, TaskStatus
-from claude_flow.scheduler.models import AgentConfig, RunStatus
-from claude_flow.scheduler.store import SchedulerStore
+from chloe.dispatcher.watcher import OutputWatcher, TokenUsage, WatcherResult
+from chloe.dispatcher.runner import TaskRunner, TaskRunError, _check_claude_available
+from chloe.dispatcher.process import RunningProcess
+from chloe.graph.models import Task, TaskType, TaskStatus
+from chloe.scheduler.models import AgentConfig, RunStatus
+from chloe.scheduler.store import SchedulerStore
 
 
 # ---------------------------------------------------------------------------

@@ -9,15 +9,15 @@ from pathlib import Path
 
 import pytest
 
-from claude_flow.observer.parser import (
+from chloe.observer.parser import (
     SessionRecord,
     TokenEvent,
     UsageParser,
     estimate_cost,
     _parse_timestamp,
 )
-from claude_flow.observer.store import UsageStore
-from claude_flow.observer.report import UsageReport
+from chloe.observer.store import UsageStore
+from chloe.observer.report import UsageReport
 
 
 # ---------------------------------------------------------------------------

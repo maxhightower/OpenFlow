@@ -1,5 +1,5 @@
 [project]
-name = "claudeflow"
+name = "chloe"
 version = "0.1.0"
 description = "Resource optimization scheduler for Claude Code subscriptions"
 license = "MIT"
@@ -23,7 +23,7 @@ web = [
 all = ["ortools>=9.9", "fastapi>=0.115", "uvicorn[standard]>=0.30", "python-multipart>=0.0.9"]
 
 [project.scripts]
-claudeflow = "claude_flow.cli.main:app"
+chloe = "chloe.cli.main:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -38,7 +38,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["claude_flow"]
+packages = ["chloe"]
 
 [build-system]
 requires = ["hatchling"]

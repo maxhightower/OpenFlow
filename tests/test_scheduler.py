@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from claude_flow.graph.models import (
+from chloe.graph.models import (
     ProjectDAG,
     Task,
     TaskStatus,
     TaskType,
 )
-from claude_flow.graph.sample import build_sample_dag
-from claude_flow.scheduler.solver import Schedule, ScheduledTask, solve
+from chloe.graph.sample import build_sample_dag
+from chloe.scheduler.solver import Schedule, ScheduledTask, solve
 
 
 # ---------------------------------------------------------------------------

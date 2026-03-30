@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from claude_flow.graph.engine import DAGEngine
-from claude_flow.graph.models import Task, TaskType, TaskStatus
-from claude_flow.graph.sample import build_sample_dag
-from claude_flow.mcp.server import create_server, TOOL_DEFINITIONS
-from claude_flow.mcp.tools import ClaudeFlowTools
-from claude_flow.scheduler.engine import SchedulerEngine
-from claude_flow.scheduler.store import SchedulerStore
+from chloe.graph.engine import DAGEngine
+from chloe.graph.models import Task, TaskType, TaskStatus
+from chloe.graph.sample import build_sample_dag
+from chloe.mcp.server import create_server, TOOL_DEFINITIONS
+from chloe.mcp.tools import ChloeTools
+from chloe.scheduler.engine import SchedulerEngine
+from chloe.scheduler.store import SchedulerStore
 
 
 # ---------------------------------------------------------------------------
@@ -35,8 +35,8 @@ def sample_engine(tmp_store) -> SchedulerEngine:
     return SchedulerEngine(
         dag_engine=dag_engine,
         store=tmp_store,
-        estimator=__import__("claude_flow.scheduler.estimator", fromlist=["CostEstimator"]).CostEstimator(tmp_store),
-        optimizer=__import__("claude_flow.scheduler.optimizer", fromlist=["BudgetOptimizer"]).BudgetOptimizer(),
+        estimator=__import__("chloe.scheduler.estimator", fromlist=["CostEstimator"]).CostEstimator(tmp_store),
+        optimizer=__import__("chloe.scheduler.optimizer", fromlist=["BudgetOptimizer"]).BudgetOptimizer(),
         token_budget_per_window=500_000,
         model="claude-sonnet-4-6",
     )
@@ -52,8 +52,8 @@ def small_engine(tmp_path) -> SchedulerEngine:
     engine.add_task(Task("C", "Write tests", TaskType.TEST, 1.0, TaskStatus.PENDING, priority=3))
     engine.add_dependency("A", "B")
     engine.add_dependency("B", "C")
-    from claude_flow.scheduler.estimator import CostEstimator
-    from claude_flow.scheduler.optimizer import BudgetOptimizer
+    from chloe.scheduler.estimator import CostEstimator
+    from chloe.scheduler.optimizer import BudgetOptimizer
     return SchedulerEngine(
         dag_engine=engine,
         store=store,
@@ -65,13 +65,13 @@ def small_engine(tmp_path) -> SchedulerEngine:
 
 
 @pytest.fixture
-def tools(sample_engine) -> ClaudeFlowTools:
-    return ClaudeFlowTools(sample_engine)
+def tools(sample_engine) -> ChloeTools:
+    return ChloeTools(sample_engine)
 
 
 @pytest.fixture
-def small_tools(small_engine) -> ClaudeFlowTools:
-    return ClaudeFlowTools(small_engine)
+def small_tools(small_engine) -> ChloeTools:
+    return ChloeTools(small_engine)
 
 
 # ---------------------------------------------------------------------------
@@ -180,10 +180,10 @@ class TestGetNextTask:
         store = SchedulerStore(tmp_path / "done.db")
         engine = DAGEngine()
         engine.add_task(Task("X", "Done task", TaskType.FEATURE, 1.0, TaskStatus.DONE))
-        from claude_flow.scheduler.estimator import CostEstimator
-        from claude_flow.scheduler.optimizer import BudgetOptimizer
+        from chloe.scheduler.estimator import CostEstimator
+        from chloe.scheduler.optimizer import BudgetOptimizer
         sched = SchedulerEngine(engine, store, CostEstimator(store), BudgetOptimizer())
-        tools = ClaudeFlowTools(sched)
+        tools = ChloeTools(sched)
         result = await tools.get_next_task({})
         assert result["task"] is None
         assert "reason" in result
@@ -331,10 +331,10 @@ class TestRunNextTask:
         store = SchedulerStore(tmp_path / "empty.db")
         engine = DAGEngine()
         engine.add_task(Task("X", "Done", TaskType.FEATURE, 1.0, TaskStatus.DONE))
-        from claude_flow.scheduler.estimator import CostEstimator
-        from claude_flow.scheduler.optimizer import BudgetOptimizer
+        from chloe.scheduler.estimator import CostEstimator
+        from chloe.scheduler.optimizer import BudgetOptimizer
         sched = SchedulerEngine(engine, store, CostEstimator(store), BudgetOptimizer())
-        tools = ClaudeFlowTools(sched)
+        tools = ChloeTools(sched)
         result = await tools.run_next_task({})
         assert result["status"] == "skipped"
         assert "reason" in result
@@ -349,4 +349,4 @@ class TestServerCreation:
     def test_create_server_returns_server(self, sample_engine):
         server = create_server(sample_engine)
         assert server is not None
-        assert server.name == "claudeflow"
+        assert server.name == "chloe"

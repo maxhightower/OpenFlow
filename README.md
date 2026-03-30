@@ -1,4 +1,4 @@
-# ClaudeFlow
+# Chloe
 
 [![CI](https://github.com/maxhightower/OpenFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/maxhightower/OpenFlow/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
@@ -6,14 +6,14 @@
 
 Resource optimization scheduler for Claude Code subscriptions.
 
-ClaudeFlow analyzes your Claude Code usage patterns and helps you optimize token consumption, schedule work efficiently, and maximize the value of your subscription.
+Chloe analyzes your Claude Code usage patterns and helps you optimize token consumption, schedule work efficiently, and maximize the value of your subscription.
 
 ## Features
 
 - **Observer** — Parses `~/.claude/projects/**/*.jsonl` usage logs, stores data in SQLite, and generates Rich-formatted baseline reports (peak hours, burn rate, cost projections, top projects)
 - **Graph** — DAG dependency engine using NetworkX with terminal visualization
 - **Scheduler** — Critical path + bin-packing optimizer using OR-Tools CP-SAT solver
-- **MCP Server** — Lets Claude Code call ClaudeFlow directly as an MCP tool
+- **MCP Server** — Lets Claude Code call Chloe directly as an MCP tool
 - **Dispatcher** — Executes tasks via the `claude` CLI with output capture and token tracking
 - **CLI** — Terminal UI built with Rich and Typer (10 commands)
 
@@ -33,36 +33,36 @@ uv sync --extra solver
 
 ```bash
 # Scan usage logs and print a baseline report
-claudeflow observe
+chloe observe
 
 # Show live burn rate (refreshes every 30s)
-claudeflow status
+chloe status
 
 # Visualize a task dependency graph
-claudeflow graph --file tasks.json
+chloe graph --file tasks.json
 
 # Check your token budget window
-claudeflow budget
+chloe budget
 
 # Get token cost estimates by task type
-claudeflow estimate --type feature
+chloe estimate --type feature
 
 # View the optimized execution schedule
-claudeflow schedule --file tasks.json
+chloe schedule --file tasks.json
 
 # Execute the next scheduled task via claude CLI
-claudeflow run --file tasks.json
+chloe run --file tasks.json
 
 # Add a task to the DAG
-claudeflow queue --file tasks.json --name "Add auth middleware" --type feature
+chloe queue --file tasks.json --name "Add auth middleware" --type feature
 
 # View run history
-claudeflow history
+chloe history
 ```
 
 ## MCP Server Setup
 
-ClaudeFlow includes an MCP server that lets Claude Code query your budget, schedule, and execute tasks directly.
+Chloe includes an MCP server that lets Claude Code query your budget, schedule, and execute tasks directly.
 
 ### Configure in Claude Code
 
@@ -71,9 +71,9 @@ Add the following to your Claude Code MCP settings (`~/.claude/settings.json`):
 ```json
 {
   "mcpServers": {
-    "claudeflow": {
+    "chloe": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/OpenFlow", "python", "-m", "claude_flow.mcp"],
+      "args": ["run", "--directory", "/path/to/OpenFlow", "python", "-m", "chloe.mcp"],
       "env": {}
     }
   }
@@ -83,7 +83,7 @@ Add the following to your Claude Code MCP settings (`~/.claude/settings.json`):
 Or start the server manually:
 
 ```bash
-claudeflow mcp-serve --file tasks.json --budget 500000
+chloe mcp-serve --file tasks.json --budget 500000
 ```
 
 ### Available MCP Tools
@@ -163,12 +163,12 @@ uv run pytest -v
 ## Project Structure
 
 ```
-claude_flow/
+chloe/
 ├── observer/       # Parses ~/.claude/**/*.jsonl usage logs
 ├── graph/          # DAG dependency engine using networkx
 ├── scheduler/      # Critical path + bin-packing optimizer (OR-Tools CP-SAT)
 ├── dispatcher/     # Executes tasks via claude CLI
-├── mcp/            # MCP server so Claude Code can call ClaudeFlow
+├── mcp/            # MCP server so Claude Code can call Chloe
 ├── cli/            # Terminal UI using Rich + Typer
 └── tests/          # Tests for each module
 ```

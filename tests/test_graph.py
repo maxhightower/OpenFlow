@@ -9,15 +9,15 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from claude_flow.graph.engine import DAGEngine
-from claude_flow.graph.models import (
+from chloe.graph.engine import DAGEngine
+from chloe.graph.models import (
     ProjectDAG,
     Task,
     TaskStatus,
     TaskType,
 )
-from claude_flow.graph.render import DAGRenderer
-from claude_flow.graph.sample import build_sample_dag
+from chloe.graph.render import DAGRenderer
+from chloe.graph.sample import build_sample_dag
 
 
 # ---------------------------------------------------------------------------

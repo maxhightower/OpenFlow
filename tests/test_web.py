@@ -8,8 +8,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from claude_flow.web.app import create_app
-from claude_flow.web.config import WebConfig
+from chloe.web.app import create_app
+from chloe.web.config import WebConfig
 
 
 @pytest.fixture()
