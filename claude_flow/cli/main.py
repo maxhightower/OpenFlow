@@ -514,6 +514,56 @@ def history(
     store.close()
 
 
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", "-H", help="Bind address"),
+    port: int = typer.Option(8420, "--port", "-p", help="Port number"),
+    token_budget: int = typer.Option(500_000, "--budget", "-b", help="Token budget per window"),
+    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="Model to use"),
+    db_path: str = typer.Option(None, "--db", help="Path to SQLite database"),
+    reload: bool = typer.Option(False, "--reload", help="Auto-reload on code changes (dev mode)"),
+) -> None:
+    """Start the ClaudeFlow web dashboard and API server."""
+    try:
+        import uvicorn
+        from claude_flow.web.config import WebConfig
+    except ImportError:
+        console.print(
+            "[red]Web dependencies not installed.[/red]\n"
+            "Install with: [bold]uv sync --extra web[/bold]"
+        )
+        raise typer.Exit(1)
+
+    config = WebConfig(
+        host=host,
+        port=port,
+        token_budget=token_budget,
+        model=model,
+        db_path=Path(db_path) if db_path else WebConfig().db_path,
+    )
+
+    console.print(f"\n  [bold cyan]ClaudeFlow Web[/bold cyan] starting on [bold]http://{host}:{port}[/bold]")
+    console.print(f"  [dim]API docs: http://{host}:{port}/docs[/dim]")
+    console.print(f"  [dim]Database: {config.db_path}[/dim]\n")
+
+    # Store config in env so app.py can pick it up
+    import os
+    os.environ["CLAUDEFLOW_HOST"] = host
+    os.environ["CLAUDEFLOW_PORT"] = str(port)
+    os.environ["CLAUDEFLOW_TOKEN_BUDGET"] = str(token_budget)
+    os.environ["CLAUDEFLOW_MODEL"] = model
+    if db_path:
+        os.environ["CLAUDEFLOW_DB"] = db_path
+
+    uvicorn.run(
+        "claude_flow.web.app:create_app",
+        host=host,
+        port=port,
+        reload=reload,
+        factory=True,
+    )
+
+
 @app.command(name="mcp-serve")
 def mcp_serve(
     file: str = typer.Option(None, "--file", "-f", help="Path to tasks.json"),
