@@ -9,6 +9,7 @@ from pathlib import Path
 from chloe.graph.engine import DAGEngine
 from chloe.graph.models import Task, TaskStatus
 from chloe.scheduler.estimator import CostEstimator
+from chloe.scheduler.model_selector import ModelRecommendation, ModelSelector
 from chloe.scheduler.models import (
     BudgetWindow,
     Schedule,
@@ -34,6 +35,9 @@ class SchedulerEngine:
         optimizer: BudgetOptimizer,
         token_budget_per_window: int = DEFAULT_TOKEN_BUDGET,
         model: str = "claude-sonnet-4-6",
+        auto_select_model: bool = False,
+        model_selector: ModelSelector | None = None,
+        usd_budget_per_window: float | None = None,
     ) -> None:
         self.dag_engine = dag_engine
         self.store = store
@@ -41,6 +45,10 @@ class SchedulerEngine:
         self.optimizer = optimizer
         self.token_budget_per_window = token_budget_per_window
         self.model = model
+        self.auto_select_model = auto_select_model
+        self.model_selector = model_selector or ModelSelector()
+        self.usd_budget_per_window = usd_budget_per_window
+        self._last_recommendation: ModelRecommendation | None = None
 
     @classmethod
     def from_dag_engine(
@@ -49,11 +57,22 @@ class SchedulerEngine:
         db_path: Path | None = None,
         token_budget: int = DEFAULT_TOKEN_BUDGET,
         model: str = "claude-sonnet-4-6",
+        auto_select_model: bool = False,
+        usd_budget: float | None = None,
     ) -> SchedulerEngine:
         store = SchedulerStore(db_path)
         estimator = CostEstimator(store)
         optimizer = BudgetOptimizer()
-        return cls(dag_engine, store, estimator, optimizer, token_budget, model)
+        return cls(
+            dag_engine,
+            store,
+            estimator,
+            optimizer,
+            token_budget,
+            model,
+            auto_select_model=auto_select_model,
+            usd_budget_per_window=usd_budget,
+        )
 
     # -- Window management -----------------------------------------------------
 
@@ -104,6 +123,38 @@ class SchedulerEngine:
             "is_active": window.is_active,
         }
 
+    # -- Model selection -------------------------------------------------------
+
+    def recommend_model(
+        self,
+        expected_tokens_per_task: int = 20_000,
+        usd_budget_remaining: float | None = None,
+    ) -> ModelRecommendation:
+        """
+        Suggest the best Claude model for the current window state without
+        mutating engine state.
+
+        Headroom = (tokens_remaining_pct) - (time_remaining_pct):
+            - large positive: spare token budget → upgrade (Opus)
+            - near zero: balanced → Sonnet
+            - negative: token-constrained → Haiku to stretch
+        """
+        window = self.current_window()
+        if usd_budget_remaining is None and self.usd_budget_per_window is not None:
+            usd_budget_remaining = max(
+                0.0, self.usd_budget_per_window - window.total_cost_usd
+            )
+        return self.model_selector.select(
+            window,
+            expected_tokens_per_task=expected_tokens_per_task,
+            usd_budget_remaining=usd_budget_remaining,
+        )
+
+    @property
+    def last_recommendation(self) -> ModelRecommendation | None:
+        """The most recent ModelRecommendation produced by build_schedule()."""
+        return self._last_recommendation
+
     # -- Scheduling ------------------------------------------------------------
 
     def build_schedule(self) -> Schedule:
@@ -136,6 +187,14 @@ class SchedulerEngine:
                 is_feasible=True,
                 infeasibility_reason="No runnable tasks",
             )
+
+        if self.auto_select_model:
+            avg_expected = self._average_expected_tokens(runnable)
+            recommendation = self.recommend_model(
+                expected_tokens_per_task=avg_expected,
+            )
+            self._last_recommendation = recommendation
+            self.model = recommendation.model
 
         token_estimates = self.estimator.estimate_tokens_for_schedule(runnable, self.model)
         dependencies = list(self.dag_engine.graph.edges())
@@ -222,3 +281,13 @@ class SchedulerEngine:
         from chloe.observer.parser import COST_PER_INPUT_TOKEN, DEFAULT_COST_PER_INPUT
         rate = COST_PER_INPUT_TOKEN.get(self.model, DEFAULT_COST_PER_INPUT)
         return round(total_tokens * rate, 4)
+
+    def _average_expected_tokens(self, tasks: list[Task]) -> int:
+        """Average p90 token estimate across runnable tasks (for model selection)."""
+        if not tasks:
+            return 20_000
+        estimates = self.estimator.estimate_tokens_for_schedule(tasks, self.model)
+        values = list(estimates.values())
+        if not values:
+            return 20_000
+        return max(1, sum(values) // len(values))
