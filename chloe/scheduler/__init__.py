@@ -2,6 +2,11 @@
 
 from chloe.scheduler.engine import SchedulerEngine
 from chloe.scheduler.estimator import CostEstimator
+from chloe.scheduler.model_selector import (
+    MODEL_TIERS,
+    ModelRecommendation,
+    ModelSelector,
+)
 from chloe.scheduler.models import (
     AgentConfig,
     BudgetWindow,
@@ -21,6 +26,9 @@ __all__ = [
     "BudgetWindow",
     "CostEstimate",
     "CostEstimator",
+    "MODEL_TIERS",
+    "ModelRecommendation",
+    "ModelSelector",
     "RunStatus",
     "Schedule",
     "ScheduledTask",

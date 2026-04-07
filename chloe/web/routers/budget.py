@@ -58,3 +58,26 @@ def get_budget_history(
         }
         for r in rows
     ]
+
+
+@router.get("/recommend-model")
+def recommend_model(
+    expected_tokens: int = 20_000,
+    usd_budget_remaining: float | None = None,
+    store: WebStore = Depends(get_store),
+    config: WebConfig = Depends(get_config),
+) -> dict:
+    """
+    Suggest the best Claude model for the current 5-hour window.
+
+    The selector compares the fraction of tokens remaining against the
+    fraction of time remaining and picks Haiku/Sonnet/Opus to maximise
+    budget utilisation. More expensive models are favoured when there is
+    little time left and unused tokens would otherwise evaporate.
+    """
+    scheduler = _get_scheduler(store, config)
+    recommendation = scheduler.recommend_model(
+        expected_tokens_per_task=expected_tokens,
+        usd_budget_remaining=usd_budget_remaining,
+    )
+    return recommendation.to_dict()
